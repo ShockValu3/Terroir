@@ -1,0 +1,18 @@
+{
+  "slug": "Terroir",
+  "version": "2.0.0",
+  "license": "proprietary",
+  "brand": "Terroir",
+  "model": "TerroirTest",
+  "name": "Terroir Test",
+  "author": "ShockValue",
+  "description": "Test module for Terroir plugin",
+  "modules": [
+    {
+      "slug": "TerroirTest",
+      "name": "TerroirTest",
+      "description": "A simple test module",
+      "tags": ["utility"]
+    }
+  ]
+}

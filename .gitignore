@@ -1,0 +1,9 @@
+build/
+dist/
+plugin.dll
+*.o
+*.a
+*.so
+*.zip
+*.log
+.vscode/
