@@ -1,18 +1,23 @@
 {
   "slug": "Terroir",
+  "name": "Terroir",
   "version": "2.0.0",
-  "license": "proprietary",
+  "license": "license: CC-BY-4.0",
   "brand": "Terroir",
-  "model": "TerroirTest",
-  "name": "Terroir Test",
-  "author": "ShockValue",
-  "description": "Test module for Terroir plugin",
+  "author": "Peter Santerre aka ShockValue",
+  "description": "A collection of high-quality, focused Eurorack modules.",
   "modules": [
     {
-      "slug": "TerroirTest",
-      "name": "TerroirTest",
-      "description": "A simple test module",
-      "tags": ["utility"]
-    }
+      "slug": "Lure",
+      "name": "Lure",
+      "description": "A bias-centered, force-field-driven Brownian walk. \nOutput is shaped by pull gravity, softened edge repulsion, and CV-modulatable parameters including Speed, Bias, and Pull.\nThe result is a smooth, organic voltage source that explores a defined range with tunable drift behavior.",
+      "tags": [
+        "Random",
+        "Modulation",
+        "Control Voltage",
+        "Utility"
+      ],
+      "category": "Random"
+    }    
   ]
 }

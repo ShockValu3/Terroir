@@ -1,15 +1,13 @@
-#define _USE_MATH_DEFINES  // Optional but safe to include
-#include "plugin.hpp"
+#include <rack.hpp>
+#include "Lure.hpp"
 
 using namespace rack;
 
-Plugin* pluginInstance = nullptr;
-Model* modelTerroirTest = nullptr;
+Model* modelLure;
 
-extern Model* createTerroirModel();  // Declare the function implemented in TerroirTest.cpp
+rack::Plugin* pluginInstance = nullptr;
 
 extern "C" void init(Plugin* p) {
     pluginInstance = p;
-    modelTerroirTest = createTerroirModel();
-    p->addModel(modelTerroirTest);
+    p->addModel(createModel<Lure, LureWidget>("Lure"));
 }
