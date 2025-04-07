@@ -6,7 +6,8 @@ SRC := plugin.cpp \
 OBJ := $(SRC:.cpp=.o)
 
 # Compiler and linker flags
-CXXFLAGS += -std=c++11 -Wsuggest-override -fPIC -D_USE_MATH_DEFINES -I./src -I/c/Users/ShockValue/Documents/VCV-Dev/Rack-SDK/include -I/c/Users/ShockValue/Documents/VCV-Dev/Rack-SDK/dep/include
+CXXFLAGS += -std=c++11 -Wsuggest-override -fPIC -D_USE_MATH_DEFINES -I./src -I$(RACK_SDK)/include -I$(RACK_SDK)/dep/include
+
 
 
 LDFLAGS += -shared -L$(RACK_DIR) -lRack -static-libstdc++
