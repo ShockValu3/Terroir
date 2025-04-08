@@ -5,7 +5,8 @@ PLUGIN_NAME := Terroir
 BUILD_DIR := build
 
 SRC := plugin.cpp \
-       src/Lure.cpp
+       src/Lure.cpp \
+       src/Thrum.cpp
 
 OBJ := $(SRC:.cpp=.o)
 
