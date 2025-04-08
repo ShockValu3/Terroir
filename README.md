@@ -41,4 +41,10 @@ This project is evolving. Check back for new additions to the Terroir lineup —
 
 ---
 
-© ShockValue. Licensed under [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/).
+## License
+
+This plugin is licensed under the GNU General Public License v3.0.  
+You’re welcome to use, modify, and redistribute it, but you must:
+- Attribute the original author (ShockValue)
+- Keep derivative works under GPL-compatible licensing  
+- See `license.txt` for full terms.
