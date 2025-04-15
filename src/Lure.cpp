@@ -1,7 +1,8 @@
 #include "Lure.hpp"
 #include "rack.hpp"
 #include "componentlibrary.hpp"
-
+#include "widgets/Magpie125.hpp"
+#include "widgets/Song60.hpp"
 
 
 // ----------------------------------------------
@@ -52,48 +53,32 @@ LureWidget::LureWidget(Lure* module) {
     setModule(module);
     setPanel(createPanel(asset::plugin(pluginInstance, "res/Lure.svg")));
 
-        addParam(createParamCentered<RoundBlackKnob>(
-            window::mm2px(math::Vec(9, 20)), module, Lure::MIN_PARAM));
-        addParam(createParamCentered<Trimpot>(
-            mm2px(Vec(23, 20)), module, Lure::MIN_ATTENUVERTER));
-        addInput(createInputCentered<PJ301MPort>(
-            mm2px(Vec(34, 20)), module, Lure::MIN_INPUT));
+		addParam(createParamCentered<Magpie125>(window::mm2px(math::Vec(9, 20)), module, Lure::MIN_PARAM));
+        addParam(createParamCentered<Song60>(mm2px(Vec(23, 22.25)), module, Lure::MIN_ATTENUVERTER));
+        addInput(createInputCentered<PJ301MPort>(mm2px(Vec(34, 22.33)), module, Lure::MIN_INPUT));
 
-        addParam(createParamCentered<RoundBlackKnob>(
-            mm2px(Vec(9, 40)), module, Lure::MAX_PARAM));
-        addParam(createParamCentered<Trimpot>(
-            mm2px(Vec(23, 40)), module, Lure::MAX_ATTENUVERTER));
-        addInput(createInputCentered<PJ301MPort>(
-            mm2px(Vec(34, 40)), module, Lure::MAX_INPUT));    
+		addParam(createParamCentered<Magpie125>(window::mm2px(math::Vec(9, 39)), module, Lure::MAX_PARAM));
+        addParam(createParamCentered<Song60>(mm2px(Vec(23, 41.25)), module, Lure::MAX_ATTENUVERTER));
+        addInput(createInputCentered<PJ301MPort>(mm2px(Vec(34, 41.33)), module, Lure::MAX_INPUT));    
 
-        addParam(createParamCentered<RoundBlackKnob>(
-            mm2px(Vec(9, 60)), module, Lure::BIAS_PARAM));
-        addParam(createParamCentered<Trimpot>(
-            mm2px(Vec(23, 60)), module, Lure::BIAS_ATTENUVERTER));
-        addInput(createInputCentered<PJ301MPort>(
-            mm2px(Vec(34, 60)), module, Lure::BIAS_INPUT));
+		addParam(createParamCentered<Magpie125>(window::mm2px(math::Vec(9, 58)), module, Lure::BIAS_PARAM));
+        addParam(createParamCentered<Song60>(mm2px(Vec(23, 60.25)), module, Lure::BIAS_ATTENUVERTER));
+        addInput(createInputCentered<PJ301MPort>(mm2px(Vec(34, 60.33)), module, Lure::BIAS_INPUT));
         
-        addParam(createParamCentered<RoundBlackKnob>(
-            mm2px(Vec(9, 80)), module, Lure::PULL_PARAM));
-        addParam(createParamCentered<Trimpot>(
-            mm2px(Vec(23, 80)), module, Lure::PULL_ATTENUVERTER));
-        addInput(createInputCentered<PJ301MPort>(
-            mm2px(Vec(34, 80)), module, Lure::PULL_INPUT));
+		addParam(createParamCentered<Magpie125>(window::mm2px(math::Vec(9, 77)), module, Lure::PULL_PARAM));
+        addParam(createParamCentered<Song60>(mm2px(Vec(23, 79.25)), module, Lure::PULL_ATTENUVERTER));
+        addInput(createInputCentered<PJ301MPort>(mm2px(Vec(34, 79.33)), module, Lure::PULL_INPUT));
 
-        addParam(createParamCentered<RoundBlackKnob>(
-            mm2px(Vec(9, 100)), module, Lure::SPEED_PARAM));
-        addParam(createParamCentered<Trimpot>(
-            mm2px(Vec(23, 100)), module, Lure::SPEED_ATTENUVERTER));
-        addInput(createInputCentered<PJ301MPort>(
-            mm2px(Vec(34, 100)), module, Lure::SPEED_INPUT));
+		addParam(createParamCentered<Magpie125>(window::mm2px(math::Vec(9, 96)), module, Lure::SPEED_PARAM));
+        addParam(createParamCentered<Song60>(mm2px(Vec(23, 98.25)), module, Lure::SPEED_ATTENUVERTER));
+        addInput(createInputCentered<PJ301MPort>(mm2px(Vec(34, 98.33)), module, Lure::SPEED_INPUT));
 
-        addOutput(createOutputCentered<componentlibrary::PJ301MPort>(
-           mm2px(math::Vec(20.32, 112)), module, Lure::CV_OUTPUT));
+        addOutput(createOutputCentered<componentlibrary::PJ301MPort>(mm2px(math::Vec(20.32,110)), module, Lure::CV_OUTPUT));
 
-		   addChild(createWidget<ThemedScrew>(Vec(RACK_GRID_WIDTH, 0)));
-		   addChild(createWidget<ThemedScrew>(Vec(box.size.x - 2 * RACK_GRID_WIDTH, 0)));
-		   addChild(createWidget<ThemedScrew>(Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
-		   addChild(createWidget<ThemedScrew>(Vec(box.size.x - 2 * RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
+		addChild(createWidget<ThemedScrew>(Vec(RACK_GRID_WIDTH, 0)));
+		addChild(createWidget<ThemedScrew>(Vec(box.size.x - 2 * RACK_GRID_WIDTH, 0)));
+		addChild(createWidget<ThemedScrew>(Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
+		addChild(createWidget<ThemedScrew>(Vec(box.size.x - 2 * RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
 }
 
 float Lure::getModulatedMin() {

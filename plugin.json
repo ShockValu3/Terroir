@@ -18,6 +18,18 @@
         "Utility"
       ],
       "category": "Random"
-    }    
+    },
+    {
+      "slug": "Thrum",
+      "name": "Thrum",
+      "description": "A pulsing oscillator with envelope shaping and CV out. Ideal for heartbeat or rotating beacon-like textures.",
+      "tags": [
+        "Oscillator",
+        "Envelope",
+        "LFO",
+        "Modulation"
+      ],
+      "category": "Oscillator"
+    }
   ]
 }

@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Generator: Adobe Illustrator 25.2.3, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
+
+<svg
+   version="1.0"
+   id="svg111794"
+   x="0px"
+   y="0px"
+   width="12.5mm"
+   height="12.5mm"
+   viewBox="0 0 47.244095 47.244095"
+   enable-background="new 0 0 28.34759 28.34768"
+   xml:space="preserve"
+   sodipodi:docname="Magpie125G_bg.svg"
+   inkscape:version="1.4 (86a8ad7, 2024-10-11)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"><defs
+   id="defs7" />
+<sodipodi:namedview
+   bordercolor="#666666"
+   borderopacity="1.0"
+   fit-margin-bottom="0"
+   fit-margin-left="0"
+   fit-margin-right="0"
+   fit-margin-top="0"
+   id="base"
+   inkscape:current-layer="g7"
+   inkscape:cx="29.587999"
+   inkscape:cy="25.964077"
+   inkscape:document-units="mm"
+   inkscape:pageopacity="0.0"
+   inkscape:pageshadow="2"
+   inkscape:window-height="2054"
+   inkscape:window-maximized="1"
+   inkscape:window-width="3840"
+   inkscape:window-x="3829"
+   inkscape:window-y="-11"
+   inkscape:zoom="22.627417"
+   pagecolor="#ffffff"
+   showgrid="false"
+   inkscape:showpageshadow="2"
+   inkscape:pagecheckerboard="0"
+   inkscape:deskcolor="#d1d1d1">
+	</sodipodi:namedview>
+<g
+   id="g7"
+   transform="matrix(1.6665936,0,0,1.6665936,1.0013141e-4,-3.3377138e-5)">
+	<linearGradient
+   id="SVGID_1_"
+   gradientUnits="userSpaceOnUse"
+   x1="14.17379"
+   y1="1.9999999e-05"
+   x2="14.17379"
+   y2="28.347719">
+		<stop
+   offset="0"
+   style="stop-color:#B0ACAE"
+   id="stop1" />
+		<stop
+   offset="1"
+   style="stop-color:#000000"
+   id="stop2" />
+	</linearGradient>
+	
+	
+	
+	
+		<linearGradient
+   id="SVGID_2_"
+   gradientUnits="userSpaceOnUse"
+   x1="5.12815"
+   y1="-4117.3818"
+   x2="27.655621"
+   y2="-4117.3818"
+   gradientTransform="matrix(0,1.2331937,-1.2308289,0,-5053.6187,-6.0404807)">
+		<stop
+   offset="0"
+   style="stop-color:#d9d9d9;stop-opacity:1;"
+   id="stop3" />
+		<stop
+   offset="1"
+   style="stop-color:#1F1E1F"
+   id="stop4" />
+	</linearGradient>
+	<circle
+   fill="url(#SVGID_2_)"
+   cx="14.17379"
+   cy="14.17387"
+   id="ellipse4"
+   style="fill:#c8c8c8;stroke-width:1.23201;fill-opacity:1"
+   r="13.890373" />
+	<path
+   opacity="0.5"
+   d="m 14.18504,14.173662 12.114413,6.764554 c 1.18734,-2.126368 1.794184,-4.528322 1.759267,-6.96348 C 28.0238,11.539579 27.348357,9.1559977 26.100528,7.0645583 Z"
+   id="path4"
+   style="opacity:0.02;stroke-width:1.23142;stroke-dasharray:none"
+   inkscape:transform-center-x="-11.586047"
+   inkscape:transform-center-y="-0.27964271" />
+	<path
+   opacity="0.5"
+   d="M 14.131614,14.181343 1.9629469,7.4870345 C 0.78793639,9.6229248 0.19571552,12.031003 0.24607068,14.46823 c 0.0503551,2.437226 0.74152225,4.8188 2.00376312,6.904323 z"
+   id="path5"
+   style="opacity:0.02;stroke-width:1.2316"
+   inkscape:transform-center-x="11.635645"
+   inkscape:transform-center-y="0.43035065" />
+	<path
+   opacity="0.1"
+   fill="#ffffff"
+   d="m 14.17153,14.17096 3.610857,13.462965 c 1.177678,-0.315249 2.308908,-0.783382 3.364779,-1.392395 1.05587,-0.609025 2.027285,-1.353706 2.889405,-2.214997 z"
+   id="path6"
+   style="stroke-width:1.23763;opacity:0.15" />
+	<path
+   opacity="0.1"
+   fill="#ffffff"
+   d="M 14.17158,14.17103 10.579265,0.76432827 C 9.4076475,1.0782608 8.2822105,1.5444272 7.2317657,2.1509046 6.1813208,2.7573819 5.2148905,3.4989461 4.3572056,4.3566434 Z"
+   id="path7"
+   style="stroke-width:1.22918;opacity:0.15" />
+</g>
+</svg>
