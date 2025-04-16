@@ -10,8 +10,9 @@ extern rack::Plugin* pluginInstance;
 
 struct Thrum : Module {
 	enum ParamIds {
-		PULSE_DURATION_PARAM,  // Controls how long the pulse lasts (active envelope duration)
-		PULSE_RATE_PARAM,      // Controls how often the pulse fires (Hz)
+		PULSE_DURATION_PARAM, // Active envelope duration (seconds)
+		PULSE_RATE_PARAM,     // Pulse rate (Hz)
+		BIAS_PARAM,           // Bias/slant (0=early peak, 0.5=symmetric, 1=late peak)
 		NUM_PARAMS
 	};
 	enum InputIds {
@@ -25,7 +26,7 @@ struct Thrum : Module {
 		NUM_LIGHTS
 	};
 
-	// Phase accumulator in seconds
+	// Phase accumulator (seconds); resets every period
 	float phase = 0.f;
 
 	Thrum();
