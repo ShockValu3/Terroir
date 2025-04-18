@@ -63,117 +63,72 @@ ThrumWidget::ThrumWidget(Thrum* module) {
     addChild(createWidget<ThemedScrew>(Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
     addChild(createWidget<ThemedScrew>(Vec(box.size.x - 2 * RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
 }
+
 void Thrum::process(const ProcessArgs& args) {
-    // 0) Knobs
-    float dKnob = params[TOTAL_DURATION_PARAM].getValue();  // 0..1
-    float duty  = params[DUTY_CYCLE_PARAM].getValue();      // 0..1
-    float bias  = params[BIAS_PARAM].getValue();            // 0..1
+    float dKnob = params[TOTAL_DURATION_PARAM].getValue();  
+    float duty  = params[DUTY_CYCLE_PARAM].getValue();      
+    float bias  = params[BIAS_PARAM].getValue();            
 
     bool clocked = inputs[CLOCK_INPUT].isConnected();
     float env = 0.f;
     float in  = inputs[AUDIO_INPUT].getVoltage();
 
-    // These will get filled in below:
-    float effectivePeriod;
-    float activeDuration;
-    float t;  // time since our last retrigger
+    float totalDuration = 0.05f + 1.95f * dKnob;
+
+    if (duty <= 0.f) {
+        outputs[ENV_OUTPUT].setVoltage(0.f);
+        outputs[AUDIO_OUTPUT].setVoltage(0.f);
+        return;
+    }
+
+    float envelopeDuration = totalDuration * duty;
+    float peakFraction = 0.5f + (bias - 0.5f) * 0.8f;
+    float p = envelopeDuration * peakFraction;
+
+    float t = 0.f;
 
     if (clocked) {
-        // 1) Edge‑detect & measure clock
-        float gate     = inputs[CLOCK_INPUT].getVoltage();
-        bool  gateHigh = gate >= 1.f;
+        float gate = inputs[CLOCK_INPUT].getVoltage();
+        bool gateHigh = gate >= 1.f;
+
         if (!prevGateHigh && gateHigh) {
-            // Rising edge!
-            // — Measure period —
-            if (haveClockPeriod) {
-                clockPeriod = clockTimer;
-            } else {
-                haveClockPeriod = true;
-            }
-            clockTimer = 0.f;
-
-            // — Count edges for divisions —
-            edgeCount++;
-
-            // — First ever edge: lock to downbeat —
-            if (firstEdge) {
-                clockPhase = 0.f;
-                firstEdge  = false;
-            }
-
-            // — If division mode, retrigger on the Nth beat —
-            // We'll fill in divisionFactor below once we know rateMul.
+            clockPhase = 0.f;  // retrigger
         }
         prevGateHigh = gateHigh;
-        clockTimer  += args.sampleTime;
 
-        // 2) Quantize the Rate/Dur knob into your table
-        int idx = int(std::roundf(dKnob * (RATE_STEPS - 1)));
-        idx = clamp(idx, 0, RATE_STEPS - 1);
-        float rateMul = rateTable[idx];
+        clockPhase += args.sampleTime;
+        if (clockPhase > totalDuration)
+            clockPhase = totalDuration;
 
-        // 3) Compute the scaled period
-        effectivePeriod = haveClockPeriod
-            ? (clockPeriod / rateMul)  // CW = faster
-            : 1.f;                     // fallback
-
-        // 4) Handle division vs subdivision
-        if (rateMul <= 1.f) {
-            // Division (incl. 1×)
-            // e.g. rateMul=0.5 → divisionFactor=2 → one pulse every 2 beats
-            int divisionFactor = int(std::roundf(1.f / rateMul));
-            if (edgeCount >= divisionFactor) {
-                edgeCount   = 0;
-                clockPhase  = 0.f;  // retrigger now
+        if (clockPhase <= envelopeDuration) {
+            t = clockPhase / duty;  // stretch envelope to fit within duty
+            if (t <= p) {
+                env = attackSegment(t, p);
+            } else {
+                env = decaySegment(t, envelopeDuration, p);
             }
-            // phase just counts up from that retrigger
-            clockPhase += args.sampleTime;
-        } else {
-            // Subdivision (>1×)
-            // only wrap, no retrigger on edges
-            clockPhase += args.sampleTime;
-            if (clockPhase >= effectivePeriod) {
-                clockPhase -= effectivePeriod;
-            }
-        }
-
-        // 5) Build envelope off clockPhase
-        t = clockPhase;
-        activeDuration = effectivePeriod * duty;
-        if (t < activeDuration) {
-            float peakFraction = 0.1f + 0.8f * bias;
-            float p = activeDuration * peakFraction;
-            env = (t <= p)
-                ? attackSegment(t, p)
-                : decaySegment(t, activeDuration, p);
         } else {
             env = 0.f;
         }
 
     } else {
-        // — Free‑run (no clock) —
-        float totalDuration = 0.05f + 1.95f * dKnob;  // [0.05..2.0]s
-        effectivePeriod = totalDuration;
-        activeDuration  = effectivePeriod * duty;
-
+        // Free-run
         phase += args.sampleTime;
-        if (phase >= effectivePeriod)
-            phase -= effectivePeriod;
-        t = phase;
+        if (phase >= totalDuration)
+            phase -= totalDuration;
 
-        if (t < activeDuration) {
-            float peakFraction = 0.1f + 0.8f * bias;
-            float p = activeDuration * peakFraction;
-            env = (t <= p)
-                ? attackSegment(t, p)
-                : decaySegment(t, activeDuration, p);
+        if (phase <= envelopeDuration) {
+            t = phase / duty;  // squash into duty window
+            if (t <= p) {
+                env = attackSegment(t, p);
+            } else {
+                env = decaySegment(t, envelopeDuration, p);
+            }
         } else {
             env = 0.f;
         }
     }
 
-    // 6) Outputs
     outputs[ENV_OUTPUT].setVoltage(env);
     outputs[AUDIO_OUTPUT].setVoltage(in * (env / 10.f));
 }
-
