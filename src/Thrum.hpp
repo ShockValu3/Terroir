@@ -2,6 +2,7 @@
 #define THRUM_HPP
 
 #include "rack.hpp"
+#include "plugin.hpp"
 using namespace rack;
 
 extern rack::Plugin* pluginInstance;
@@ -27,15 +28,23 @@ struct Thrum : Module {
         NUM_LIGHTS
     };
 
-    // Minimal state for one-shot triggering
+    // State for clocked mode
     float clockPhase = 0.f;
     bool prevGateHigh = false;
+    bool isRunning = false;
 
-    // Free-run
+    // Free-run state
     float phase = 0.f;
 
-    Thrum();
+    // Debug logging counter (member variable) ADD THIS:
+    int processCounter = 0; // Or uint64_t if you prefer
+
+    Thrum(); // Make sure constructor exists
     void process(const ProcessArgs& args) override;
+
+    // Optional: If using JSON persistence
+    // json_t *dataToJson() override;
+    // void dataFromJson(json_t *rootJ) override;
 };
 
 struct ThrumWidget : ModuleWidget {
