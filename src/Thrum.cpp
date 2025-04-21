@@ -10,6 +10,8 @@
 #include <vector>
 #include <cmath>
 #include <stdexcept>
+#include <string> // For std::string, std::to_string
+#include <utility> // For std::pair
 
 // --- dr_wav ---
 #include "dr_wav.h"
@@ -23,7 +25,6 @@
 extern rack::Plugin* pluginInstance;
 
 // --- Helper Functions: Envelope Segments ---
-// (Assuming attackSegment and decaySegment functions are defined here as before)
 static const float k = 5.f;
 static float attackSegment(float t, float p) {
     if (p <= 1e-6f) return 10.f;
@@ -47,7 +48,6 @@ static float decaySegment(float t, float activeDuration, float p) {
 
 
 // --- Helper Function: Sample Loading ---
-// (Assuming loadSample function is defined here as before)
 bool Thrum::loadSample(const std::string& path, SampleData& outData) {
     unsigned int channels;
     unsigned int loadedSampleRate;
@@ -77,68 +77,57 @@ bool Thrum::loadSample(const std::string& path, SampleData& outData) {
 
 // --- Thrum Constructor ---
 Thrum::Thrum() {
-    // Configure the number of parameters, inputs, outputs, and lights
-    // using the updated enums from Thrum.hpp
+    // Configure using updated NUM_PARAMS/NUM_INPUTS from Thrum.hpp
     config(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);
 
     // Configure main parameters
     configParam(TOTAL_DURATION_PARAM, 0.05f, 2.0f, 1.0f, "Duration", " s");
     configParam(DUTY_CYCLE_PARAM, 0.f, 1.f, 0.5f, "Duty Cycle", "%", 0.f, 100.f);
-    configParam(BIAS_PARAM, 0.f, 1.f, 0.5f, "Bias"); // Removed % display for simplicity, add back if needed
+    configParam(BIAS_PARAM, 0.f, 1.f, 0.5f, "Bias");
 
-    // Configure attenuverter parameters (range 0-1, default 1 for unipolar attenuation)
-    configParam(DURATION_ATTEN_PARAM, 0.f, 1.f, 1.f, "Duration CV Attenuation", "%", 0.f, 100.f);
-    configParam(DUTY_ATTEN_PARAM, 0.f, 1.f, 1.f, "Duty Cycle CV Attenuation", "%", 0.f, 100.f);
-    configParam(BIAS_ATTEN_PARAM, 0.f, 1.f, 1.f, "Bias CV Attenuation", "%", 0.f, 100.f);
+    // Configure ALL attenuverter parameters
+    configParam(DURATION_ATTEN_PARAM, 0.f, 1.f, 1.f, "Duration CV Atten", "%", 0.f, 100.f); // New
+    configParam(DUTY_ATTEN_PARAM, 0.f, 1.f, 1.f, "Duty Cycle CV Atten", "%", 0.f, 100.f); // New
+    configParam(BIAS_ATTEN_PARAM, 0.f, 1.f, 1.f, "Bias CV Atten", "%", 0.f, 100.f);
 
-    // --- Sample Loading Logic (as before) ---
-    isRunning = false;
-    prevGateHigh = false;
-    clockPhase = 0.f;
-    phase = 0.f;
-    samplePlaybackPhase = 0.0;
-    currentSampleIndex = 0;
-    const std::vector<std::string> sampleRelPaths = { "res/sounds/AlienBreath.wav", "res/sounds/siren.wav" };
+    // --- Sample Loading Logic ---
+    isRunning = false; prevGateHigh = false; clockPhase = 0.f; phase = 0.f;
+    samplePlaybackPhase = 0.0; currentSampleIndex = 0;
+    const std::vector<std::pair<std::string, std::string>> sampleFiles = {
+        {"res/sounds/AlienBreath.wav", "Alien Breath"},
+        {"res/sounds/siren.wav", "Siren"}
+    };
     loadedSamples.clear();
-    loadedSamples.reserve(sampleRelPaths.size());
-    for (const auto& relPath : sampleRelPaths) {
+    std::vector<std::string> sampleDisplayNames;
+    loadedSamples.reserve(sampleFiles.size());
+    sampleDisplayNames.reserve(sampleFiles.size());
+    for (const auto& filePair : sampleFiles) {
+        const std::string& relPath = filePair.first; const std::string& displayName = filePair.second;
         try {
             std::string fullPath = asset::plugin(pluginInstance, relPath); SampleData loadedData;
-            if (loadSample(fullPath, loadedData)) { loadedSamples.push_back(loadedData); }
-            else { WARN("Skipping sample: %s", relPath.c_str()); }
+            if (loadSample(fullPath, loadedData)) {
+                loadedSamples.push_back(loadedData); sampleDisplayNames.push_back(displayName);
+            } else { WARN("Skipping sample: %s", relPath.c_str()); }
         } catch (...) { WARN("Unknown exception loading: %s", relPath.c_str()); }
     }
     INFO("Finished loading samples. %zu samples loaded.", loadedSamples.size());
-    // --- End Sample Loading Logic ---
+    // --- End Sample Loading ---
 
-    // Configure Sample Select Param (after samples are loaded)
+    // Configure Sample Select Param using configSwitch (after samples are loaded)
     int numSamples = loadedSamples.size();
     float maxIndex = (numSamples > 0) ? (float)(numSamples - 1) : 0.f;
-    configParam(SAMPLE_SELECT_PARAM, 0.f, maxIndex, 0.f, "Sample", "", 0.f, 1.f, 1.f);
-
-    // Apply snapping via ParamQuantity (Discord Suggestion)
-    if (paramQuantities[SAMPLE_SELECT_PARAM]) {
-         paramQuantities[SAMPLE_SELECT_PARAM]->snapEnabled = true;
-         paramQuantities[SAMPLE_SELECT_PARAM]->smoothEnabled = false;
-    }
+    configSwitch(SAMPLE_SELECT_PARAM, 0.f, maxIndex, 0.f, "Sample", sampleDisplayNames);
 
     // Set initial state
-    onReset(); // Call onReset to ensure consistent starting state
+    onReset();
 }
 
 // --- onReset Method ---
 void Thrum::onReset() {
-    phase = 0.f;
-    clockPhase = 0.f;
-    isRunning = false;
-    prevGateHigh = false;
+    phase = 0.f; clockPhase = 0.f; isRunning = false; prevGateHigh = false;
     samplePlaybackPhase = 0.0;
-    // Reset currentSampleIndex to default if needed
-    if (loadedSamples.empty()) {
-        currentSampleIndex = -1;
-    } else {
-        currentSampleIndex = rack::math::clamp(0, 0, (int)loadedSamples.size() - 1); // Default to first sample
-    }
+    if (loadedSamples.empty()) { currentSampleIndex = -1; }
+    else { currentSampleIndex = rack::math::clamp(0, 0, (int)loadedSamples.size() - 1); }
 }
 
 
@@ -150,26 +139,25 @@ void Thrum::process(const ProcessArgs& args) {
     float dutyBase = params[DUTY_CYCLE_PARAM].getValue();
     float biasBase = params[BIAS_PARAM].getValue();
 
-    // --- Read CV Inputs and Attenuverters ---
-    float durationCv = inputs[DURATION_CV_INPUT].getVoltageSum(); // Use getVoltageSum for polyphony safety
-    float dutyCv = inputs[DUTY_CV_INPUT].getVoltageSum();
-    float biasCv = inputs[BIAS_CV_INPUT].getVoltageSum();
+    // --- Read CV Inputs and Attenuverters (ALL Now Implemented) ---
+    float durationCv = inputs[DURATION_CV_INPUT].isConnected() ? inputs[DURATION_CV_INPUT].getVoltageSum() : 0.f; // New
+    float dutyCv = inputs[DUTY_CV_INPUT].isConnected() ? inputs[DUTY_CV_INPUT].getVoltageSum() : 0.f;          // New
+    float biasCv = inputs[BIAS_CV_INPUT].isConnected() ? inputs[BIAS_CV_INPUT].getVoltageSum() : 0.f;
 
-    float durationAtten = params[DURATION_ATTEN_PARAM].getValue();
-    float dutyAtten = params[DUTY_ATTEN_PARAM].getValue();
+    float durationAtten = params[DURATION_ATTEN_PARAM].getValue(); // New
+    float dutyAtten = params[DUTY_ATTEN_PARAM].getValue();          // New
     float biasAtten = params[BIAS_ATTEN_PARAM].getValue();
 
     // --- Apply CV Modulation ---
-    // Define sensitivity: How much does 1V of CV change the parameter?
-    // Example: 1V CV changes duration by 0.2s, duty/bias by 10% (0.1)
     const float durationCvScale = 0.2f; // 1V = 0.2 seconds change
-    const float dutyBiasCvScale = 0.1f; // 1V = 0.1 (10%) change (assuming +/-5V CV -> +/-0.5 range mod)
+    const float dutyBiasCvScale = 0.1f; // 1V = 0.1 (10%) change
 
-    float totalDuration = durationBase + (durationCv * durationAtten * durationCvScale);
-    float duty = dutyBase + (dutyCv * dutyAtten * dutyBiasCvScale);
+    // Calculate final parameter values with modulation
+    float totalDuration = durationBase + (durationCv * durationAtten * durationCvScale); // New
+    float duty = dutyBase + (dutyCv * dutyAtten * dutyBiasCvScale);                      // New
     float bias = biasBase + (biasCv * biasAtten * dutyBiasCvScale);
 
-    // Clamp final modulated values to their valid ranges
+    // Clamp final modulated values
     totalDuration = rack::math::clamp(totalDuration, 0.05f, 2.0f);
     duty = rack::math::clamp(duty, 0.f, 1.f);
     bias = rack::math::clamp(bias, 0.f, 1.f);
@@ -178,9 +166,8 @@ void Thrum::process(const ProcessArgs& args) {
     bool audioInputConnected = inputs[AUDIO_INPUT].isConnected();
     float inVal = audioInputConnected ? inputs[AUDIO_INPUT].getVoltageSum() : 0.f;
 
-    // --- Sample Selection Logic (as before) ---
-    float sampleSelectValue = params[SAMPLE_SELECT_PARAM].getValue();
-    int desiredSampleIndex = static_cast<int>(roundf(sampleSelectValue));
+    // --- Sample Selection Logic (Using direct value from configSwitch) ---
+    int desiredSampleIndex = static_cast<int>(params[SAMPLE_SELECT_PARAM].getValue());
     if (!loadedSamples.empty()) {
         if (desiredSampleIndex < 0) desiredSampleIndex = 0;
         if (desiredSampleIndex >= (int)loadedSamples.size()) desiredSampleIndex = (int)loadedSamples.size() - 1;
@@ -190,68 +177,55 @@ void Thrum::process(const ProcessArgs& args) {
     // --- End Sample Selection ---
 
 
-    // --- Envelope Calculation Logic (using modulated params) ---
-    float envelopeDuration = totalDuration * rack::math::clamp(duty, 0.01f, 0.99f); // Use clamped duty
+    // --- Envelope Calculation Logic (uses final 'totalDuration', 'duty', 'bias') ---
+    float envelopeDuration = totalDuration * rack::math::clamp(duty, 0.01f, 0.99f);
     envelopeDuration = fmaxf(envelopeDuration, 1e-6f);
     float peakFraction = rack::math::clamp(bias, 0.f, 1.f);
     float p = envelopeDuration * peakFraction;
     p = fmaxf(1e-6f, fminf(p, envelopeDuration - 1e-6f));
 
-    float env = 0.f;
-    float t = 0.f;
-    float calculatedEnv = 0.f;
+    float env = 0.f; float t = 0.f; float calculatedEnv = 0.f;
     bool printDebug = (++processCounter % 4096 == 0);
 
     bool clocked = inputs[CLOCK_INPUT].isConnected();
-    if (clocked) { // Clocked Mode Logic (as before)
-        float gate = inputs[CLOCK_INPUT].getVoltageSum();
-        bool gateHigh = gate >= 1.f;
+    if (clocked) { // Clocked Mode Logic
+        float gate = inputs[CLOCK_INPUT].getVoltageSum(); bool gateHigh = gate >= 1.f;
         if (!prevGateHigh && gateHigh) { isRunning = true; clockPhase = 0.f; }
         prevGateHigh = gateHigh;
         if (isRunning) {
             clockPhase += args.sampleTime; t = clockPhase;
             if (clockPhase >= totalDuration) { isRunning = false; calculatedEnv = 0.f; }
             else {
-                if (t <= envelopeDuration) {
-                    calculatedEnv = (t <= p) ? attackSegment(t, p) : decaySegment(t, envelopeDuration, p);
-                } else { calculatedEnv = 0.f; }
+                if (t <= envelopeDuration) { calculatedEnv = (t <= p) ? attackSegment(t, p) : decaySegment(t, envelopeDuration, p); }
+                else { calculatedEnv = 0.f; }
             }
         } else { calculatedEnv = 0.f; }
         env = calculatedEnv;
-    } else { // Free-running Mode Logic (as before)
+    } else { // Free-running Mode Logic
         if (isRunning || prevGateHigh) { isRunning = false; clockPhase = 0.f; prevGateHigh = false; }
         phase += args.sampleTime;
         if (phase >= totalDuration) { phase -= totalDuration; if (phase < 0.f) phase = 0.f; }
         t = phase;
-        if (t <= envelopeDuration) {
-            calculatedEnv = (t <= p) ? attackSegment(t, p) : decaySegment(t, envelopeDuration, p);
-        } else { calculatedEnv = 0.f; }
+        if (t <= envelopeDuration) { calculatedEnv = (t <= p) ? attackSegment(t, p) : decaySegment(t, envelopeDuration, p); }
+        else { calculatedEnv = 0.f; }
         env = calculatedEnv;
     }
-    env = rack::math::clamp(env, 0.f, 10.f); // Final envelope clamp
+    env = rack::math::clamp(env, 0.f, 10.f);
     // --- End Envelope Calculation ---
 
 
-    // --- Audio Output Logic (as before) ---
+    // --- Audio Output Logic ---
     float audioOutputValue = 0.f;
-    if (audioInputConnected) {
-        audioOutputValue = inVal * (env / 10.f);
-    } else {
+    if (audioInputConnected) { audioOutputValue = inVal * (env / 10.f); }
+    else {
         if (currentSampleIndex >= 0 && currentSampleIndex < (int)loadedSamples.size() && !loadedSamples[currentSampleIndex].buffer.empty()) {
-            const SampleData& currentSample = loadedSamples[currentSampleIndex];
-            const std::vector<float>& buffer = currentSample.buffer;
-            size_t bufferSize = buffer.size();
+            const SampleData& currentSample = loadedSamples[currentSampleIndex]; const std::vector<float>& buffer = currentSample.buffer; size_t bufferSize = buffer.size();
             if (bufferSize > 0) {
-                double phaseIncrement = currentSample.nativeRate / args.sampleRate;
-                samplePlaybackPhase += phaseIncrement;
-                samplePlaybackPhase = fmod(samplePlaybackPhase, (double)bufferSize);
-                if (samplePlaybackPhase < 0.0) { samplePlaybackPhase += bufferSize; }
-                int index0 = static_cast<int>(samplePlaybackPhase);
-                int index1 = index0 + 1;
-                if (index1 >= (int)bufferSize) { index1 -= bufferSize; }
-                if (index0 < 0 || index0 >= (int)bufferSize) { index0 = 0; }
-                float frac = samplePlaybackPhase - index0;
-                float sampleValue = rack::math::crossfade(buffer[index0], buffer[index1], frac);
+                double phaseIncrement = currentSample.nativeRate / args.sampleRate; samplePlaybackPhase += phaseIncrement;
+                samplePlaybackPhase = fmod(samplePlaybackPhase, (double)bufferSize); if (samplePlaybackPhase < 0.0) { samplePlaybackPhase += bufferSize; }
+                int index0 = static_cast<int>(samplePlaybackPhase); int index1 = index0 + 1;
+                if (index1 >= (int)bufferSize) { index1 -= bufferSize; } if (index0 < 0 || index0 >= (int)bufferSize) { index0 = 0; }
+                float frac = samplePlaybackPhase - index0; float sampleValue = rack::math::crossfade(buffer[index0], buffer[index1], frac);
                 audioOutputValue = (sampleValue * 5.0f) * (env / 10.0f);
             } else { audioOutputValue = 0.f; }
         } else { audioOutputValue = 0.f; }
@@ -264,39 +238,38 @@ void Thrum::process(const ProcessArgs& args) {
 }
 
 
-// --- ThrumWidget Constructor (Hardcoded Positions) ---
+// --- ThrumWidget Constructor (Full CV/Atten Widgets Added) ---
 ThrumWidget::ThrumWidget(Thrum* module) {
     setModule(module);
     setPanel(createPanel(asset::plugin(pluginInstance, "res/Thrum.svg")));
 
-    // --- Add Controls Row by Row with Hardcoded Positions ---
+    // --- Add Controls Row by Row with User's Hardcoded Positions ---
 
-    // Duration Row (Y ~ 20-25)
-    addParam(createParamCentered<Magpie125>(mm2px(Vec(9,20)), module, Thrum::TOTAL_DURATION_PARAM));
-    addParam(createParamCentered<Song60>(mm2px(Vec(23, 22.25)), module, Thrum::DURATION_ATTEN_PARAM));
-    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(34, 22.33)), module, Thrum::DURATION_CV_INPUT));
+    // Duration Row (Y ~ 20-25) - Now fully implemented
+    addParam(createParamCentered<Magpie125>(mm2px(Vec(9.f, 20.f)), module, Thrum::TOTAL_DURATION_PARAM));
+    addParam(createParamCentered<Song60>(mm2px(Vec(23.f, 22.25f)), module, Thrum::DURATION_ATTEN_PARAM)); // Added Attenuverter
+    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(34.f, 22.33f)), module, Thrum::DURATION_CV_INPUT)); // Added CV Input
 
-    // Duty Cycle Row (Y ~ 45-50)
-    addParam(createParamCentered<Magpie125>(mm2px(Vec(9, 39)), module, Thrum::DUTY_CYCLE_PARAM));
-    addParam(createParamCentered<Song60>(mm2px(Vec(23, 41.25)), module, Thrum::DUTY_ATTEN_PARAM));
-    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(34, 41.33)), module, Thrum::DUTY_CV_INPUT));
+    // Duty Cycle Row (Y ~ 45-50) - Now fully implemented
+    addParam(createParamCentered<Magpie125>(mm2px(Vec(9.f, 39.f)), module, Thrum::DUTY_CYCLE_PARAM));
+    addParam(createParamCentered<Song60>(mm2px(Vec(23.f, 41.25f)), module, Thrum::DUTY_ATTEN_PARAM)); // Added Attenuverter
+    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(34.f, 41.33f)), module, Thrum::DUTY_CV_INPUT)); // Added CV Input
 
-    // Bias Row (Y ~ 70-75)
-    addParam(createParamCentered<Magpie125>(mm2px(Vec(9, 58)), module, Thrum::BIAS_PARAM));
-    addParam(createParamCentered<Song60>(mm2px(Vec(23, 60.25)), module, Thrum::BIAS_ATTEN_PARAM));
-    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(34, 60.33)), module, Thrum::BIAS_CV_INPUT));
+    // Bias Row (Y ~ 70-75) - WITH CV/Atten (Implemented)
+    addParam(createParamCentered<Magpie125>(mm2px(Vec(9.f, 58.f)), module, Thrum::BIAS_PARAM));
+    addParam(createParamCentered<Song60>(mm2px(Vec(23.f, 60.25f)), module, Thrum::BIAS_ATTEN_PARAM)); // Implemented Attenuverter
+    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(34.f, 60.33f)), module, Thrum::BIAS_CV_INPUT)); // Implemented CV Input
 
-    // Sample Select Knob (Y ~ 95)
-    addParam(createParamCentered<Song60>(mm2px(Vec(24,92.5)), module, Thrum::SAMPLE_SELECT_PARAM));
-    // Snapping is handled in Module constructor now
+    // Sample Select Knob (Y ~ 95) - Uses configSwitch now
+    addParam(createParamCentered<Song60>(mm2px(Vec(24.f, 92.5f)), module, Thrum::SAMPLE_SELECT_PARAM));
 
-    // Bottom Row Jacks (Y ~ 110)
-    addInput (createInputCentered<PJ301MPort>(mm2px(Vec(9, 80)), module, Thrum::CLOCK_INPUT));
-    addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(31, 105)), module, Thrum::AUDIO_OUTPUT));
+    // Bottom Row Jacks (User's Positions)
+    addInput (createInputCentered<PJ301MPort>(mm2px(Vec(9.f, 80.f)), module, Thrum::CLOCK_INPUT));
+    addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(31.f, 105.f)), module, Thrum::AUDIO_OUTPUT));
+    addInput (createInputCentered<PJ301MPort>(mm2px(Vec(9.f, 105.f)), module, Thrum::AUDIO_INPUT));
+    addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(31.f, 80.f)), module, Thrum::ENV_OUTPUT));
 
-    addInput (createInputCentered<PJ301MPort>(mm2px(Vec(9, 105)), module, Thrum::AUDIO_INPUT));
-    addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(31, 80)), module, Thrum::ENV_OUTPUT));
-
+    // Screws
     addChild(createWidget<ThemedScrew>(Vec(RACK_GRID_WIDTH, 0)));
     addChild(createWidget<ThemedScrew>(Vec(box.size.x - 2 * RACK_GRID_WIDTH, 0)));
     addChild(createWidget<ThemedScrew>(Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));

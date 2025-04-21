@@ -18,37 +18,37 @@ struct SampleData {
 
 
 struct Thrum : Module {
+    // Updated Enums: Added Duration & Duty CV/Atten Params/Inputs
     enum ParamIds {
         // Main Controls
-        TOTAL_DURATION_PARAM,
-        DUTY_CYCLE_PARAM,
-        BIAS_PARAM,
-        SAMPLE_SELECT_PARAM,
+        TOTAL_DURATION_PARAM, // 0
+        DUTY_CYCLE_PARAM,     // 1
+        BIAS_PARAM,           // 2
+        SAMPLE_SELECT_PARAM,  // 3
         // Attenuverters for CV Inputs
-        DURATION_ATTEN_PARAM, // New
-        DUTY_ATTEN_PARAM,     // New
-        BIAS_ATTEN_PARAM,     // New
+        DURATION_ATTEN_PARAM, // 4 (New)
+        DUTY_ATTEN_PARAM,     // 5 (New)
+        BIAS_ATTEN_PARAM,     // 6
         // --- End New Params ---
-        NUM_PARAMS            // NUM_PARAMS must be last
+        NUM_PARAMS            // NUM_PARAMS should be last (Value is now 7)
     };
     enum InputIds {
-        CLOCK_INPUT,
-        AUDIO_INPUT,
+        CLOCK_INPUT,          // 0
+        AUDIO_INPUT,          // 1
         // CV Inputs for Main Controls
-        DURATION_CV_INPUT,    // New
-        DUTY_CV_INPUT,        // New
-        BIAS_CV_INPUT,        // New
+        DURATION_CV_INPUT,    // 2 (New)
+        DUTY_CV_INPUT,        // 3 (New)
+        BIAS_CV_INPUT,        // 4
         // --- End New Inputs ---
-        NUM_INPUTS            // NUM_INPUTS must be last
+        NUM_INPUTS            // NUM_INPUTS should be last (Value is now 5)
     };
     enum OutputIds {
-        AUDIO_OUTPUT,
-        ENV_OUTPUT,
-        NUM_OUTPUTS           // NUM_OUTPUTS must be last
+        AUDIO_OUTPUT,         // 0
+        ENV_OUTPUT,           // 1
+        NUM_OUTPUTS           // NUM_OUTPUTS should be last (Value is 2)
     };
     enum LightIds {
-        // Add any lights here if needed later
-        NUM_LIGHTS            // NUM_LIGHTS must be last
+        NUM_LIGHTS            // NUM_LIGHTS should be last (Value is 0)
     };
 
     // State variables remain the same
@@ -64,7 +64,7 @@ struct Thrum : Module {
     // --- Methods ---
     Thrum(); // Constructor
     void process(const ProcessArgs& args) override; // Main processing function
-    void onReset() override; // Add onReset declaration if not present
+    void onReset() override; // Reset method
     bool loadSample(const std::string& path, SampleData& outData); // Sample loading helper
 
 };
