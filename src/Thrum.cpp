@@ -118,8 +118,9 @@ Thrum::Thrum() {
     isRunning = false; prevGateHigh = false; clockPhase = 0.f; phase = 0.f;
     samplePlaybackPhase = 0.0; currentSampleIndex = 0;
     const std::vector<std::pair<std::string, std::string>> sampleFiles = {
+        {"res/sounds/EngineRoom.wav", "Engine Room"},
         {"res/sounds/AlienBreath.wav", "Alien Breath"},
-        {"res/sounds/siren.wav", "Siren"}
+        {"res/sounds/Siren.wav", "Siren"}
     };
     loadedSamples.clear();
     std::vector<std::string> sampleDisplayNames;
