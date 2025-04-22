@@ -2,7 +2,7 @@
   "slug": "Terroir",
   "name": "Terroir",
   "version": "2.0.0",
-  "license": "license: CC-BY-4.0",
+  "license": "GPL-3.0-or-later",
   "brand": "Terroir",
   "author": "Peter Santerre aka ShockValue",
   "description": "A collection of high-quality, focused Eurorack modules.",
@@ -10,24 +10,27 @@
     {
       "slug": "Lure",
       "name": "Lure",
-      "description": "A bias-centered, force-field-driven Brownian walk. \nOutput is shaped by pull gravity, softened edge repulsion, and CV-modulatable parameters including Speed, Bias, and Pull.\nThe result is a smooth, organic voltage source that explores a defined range with tunable drift behavior.",
+      "description": "A bias-centered, force-field-driven Brownian walk. Output is shaped by pull gravity, softened edge repulsion, and CV-modulatable parameters including Speed, Bias, and Pull. The result is a smooth, organic voltage source that explores a defined range with tunable drift behavior.",
       "tags": [
         "Random",
         "Modulation",
         "Control Voltage",
-        "Utility"
+        "Utility",
+        "LFO"
       ],
       "category": "Random"
     },
     {
       "slug": "Thrum",
       "name": "Thrum",
-      "description": "A pulsing oscillator with envelope shaping and CV out. Ideal for heartbeat or rotating beacon-like textures.",
+      "description": "A pulsing CV/audio generator inspired by mechanical heartbeats or rotating beacons. Creates rhythmic envelopes or acts as a drone source using internal samples. Can be triggered externally or run free. Features non-linear duration control (0.05s-3.0s), duty cycle, bias, sample selection, and CV inputs with bipolar attenuverters for major parameters.",
       "tags": [
         "Oscillator",
-        "Envelope",
+        "Envelope Generator",
         "LFO",
-        "Modulation"
+        "Modulation",
+        "Sampler",
+        "Drone"
       ],
       "category": "Oscillator"
     }
