@@ -8,10 +8,11 @@
 
 // Standard Library Headers
 #include <vector>
-#include <cmath>
+#include <cmath>    // Provides powf, fmaxf, fminf, fmod, exp
 #include <stdexcept>
 #include <string> // For std::string, std::to_string
 #include <utility> // For std::pair
+#include <cstdio> // For snprintf
 
 // --- dr_wav ---
 #include "dr_wav.h"
@@ -23,6 +24,20 @@
 #include "widgets/Song60.hpp"
 
 extern rack::Plugin* pluginInstance;
+
+// --- Custom ParamQuantity for Duration Display ---
+struct DurationParamQuantity : rack::engine::ParamQuantity {
+	std::string getDisplayValueString() override {
+		float internalValue = getValue();
+		const float minDuration = 0.05f;
+		const float maxDuration = 3.0f;
+		float calculatedDuration = minDuration * powf(maxDuration / minDuration, internalValue);
+		char buffer[50];
+		snprintf(buffer, sizeof(buffer), "%.2f s", calculatedDuration);
+		return std::string(buffer);
+	}
+};
+
 
 // --- Helper Functions: Envelope Segments ---
 static const float k = 5.f;
@@ -77,18 +92,27 @@ bool Thrum::loadSample(const std::string& path, SampleData& outData) {
 
 // --- Thrum Constructor ---
 Thrum::Thrum() {
-    // Configure using updated NUM_PARAMS/NUM_INPUTS from Thrum.hpp
     config(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);
 
-    // Configure main parameters
-    configParam(TOTAL_DURATION_PARAM, 0.05f, 2.0f, 1.0f, "Duration", " s");
-    configParam(DUTY_CYCLE_PARAM, 0.f, 1.f, 0.5f, "Duty Cycle", "%", 0.f, 100.f); // Keep % display for main knob
-    configParam(BIAS_PARAM, 0.f, 1.f, 0.5f, "Bias"); // Keep Bias display simple (0-1)
+    // --- Configure Parameters ---
+    configParam<DurationParamQuantity>(TOTAL_DURATION_PARAM, 0.f, 1.f, 0.5f, "Duration");
+    configParam(DUTY_CYCLE_PARAM, 0.f, 1.f, 0.5f, "Duty Cycle", "%", 0.f, 100.f);
+    configParam(BIAS_PARAM, 0.f, 1.f, 0.5f, "Bias");
+    configParam(DURATION_ATTEN_PARAM, -1.f, 1.f, 0.f, "Duration CV Atten");
+    configParam(DUTY_ATTEN_PARAM, -1.f, 1.f, 0.f, "Duty Cycle CV Atten");
+    configParam(BIAS_ATTEN_PARAM, -1.f, 1.f, 0.f, "Bias CV Atten");
 
-    // Configure ALL attenuverter parameters as BIPOLAR (-1 to +1 range, 0 default)
-    configParam(DURATION_ATTEN_PARAM, -1.f, 1.f, 0.f, "Duration CV Atten"); // Bipolar
-    configParam(DUTY_ATTEN_PARAM, -1.f, 1.f, 0.f, "Duty Cycle CV Atten"); // Bipolar
-    configParam(BIAS_ATTEN_PARAM, -1.f, 1.f, 0.f, "Bias CV Atten");       // Bipolar
+    // --- Configure Inputs (with Tooltips/Labels) ---
+    configInput(CLOCK_INPUT, "Clock/Trigger Input");
+    configInput(AUDIO_INPUT, "Audio Input");
+    configInput(DURATION_CV_INPUT, "Duration CV Input");
+    configInput(DUTY_CV_INPUT, "Duty Cycle CV Input");
+    configInput(BIAS_CV_INPUT, "Bias CV Input");
+
+    // --- Configure Outputs (with Tooltips/Labels) ---
+    configOutput(AUDIO_OUTPUT, "Audio Output");
+    configOutput(ENV_OUTPUT, "Envelope Output");
+
 
     // --- Sample Loading Logic ---
     isRunning = false; prevGateHigh = false; clockPhase = 0.f; phase = 0.f;
@@ -113,12 +137,11 @@ Thrum::Thrum() {
     INFO("Finished loading samples. %zu samples loaded.", loadedSamples.size());
     // --- End Sample Loading ---
 
-    // Configure Sample Select Param using configSwitch (after samples are loaded)
+    // Configure Sample Select Param using configSwitch
     int numSamples = loadedSamples.size();
     float maxIndex = (numSamples > 0) ? (float)(numSamples - 1) : 0.f;
     configSwitch(SAMPLE_SELECT_PARAM, 0.f, maxIndex, 0.f, "Sample", sampleDisplayNames);
 
-    // Set initial state
     onReset();
 }
 
@@ -135,7 +158,7 @@ void Thrum::onReset() {
 void Thrum::process(const ProcessArgs& args) {
 
     // --- Read Main Parameters ---
-    float durationBase = params[TOTAL_DURATION_PARAM].getValue();
+    float durationKnobValue = params[TOTAL_DURATION_PARAM].getValue(); // Raw 0-1 value
     float dutyBase = params[DUTY_CYCLE_PARAM].getValue();
     float biasBase = params[BIAS_PARAM].getValue();
 
@@ -144,22 +167,24 @@ void Thrum::process(const ProcessArgs& args) {
     float dutyCv = inputs[DUTY_CV_INPUT].isConnected() ? inputs[DUTY_CV_INPUT].getVoltageSum() : 0.f;
     float biasCv = inputs[BIAS_CV_INPUT].isConnected() ? inputs[BIAS_CV_INPUT].getVoltageSum() : 0.f;
 
-    // Read attenuverter values (now range -1 to +1)
     float durationAtten = params[DURATION_ATTEN_PARAM].getValue();
     float dutyAtten = params[DUTY_ATTEN_PARAM].getValue();
     float biasAtten = params[BIAS_ATTEN_PARAM].getValue();
 
     // --- Apply CV Modulation ---
-    const float durationCvScale = 0.2f; // 1V = 0.2 seconds change
-    const float dutyBiasCvScale = 0.1f; // 1V = 0.1 (10%) change
+    const float durationLinearCvScale = 0.1f;
+    const float dutyBiasCvScale = 0.1f;
 
-    // Calculate final parameter values with modulation (atten value handles inversion)
-    float totalDuration = durationBase + (durationCv * durationAtten * durationCvScale);
+    float linearDurationValue = durationKnobValue + (durationCv * durationAtten * durationLinearCvScale);
+    linearDurationValue = rack::math::clamp(linearDurationValue, 0.f, 1.f);
+
+    const float minDuration = 0.05f;
+    const float maxDuration = 3.0f;
+    float totalDuration = minDuration * powf(maxDuration / minDuration, linearDurationValue);
+
     float duty = dutyBase + (dutyCv * dutyAtten * dutyBiasCvScale);
     float bias = biasBase + (biasCv * biasAtten * dutyBiasCvScale);
 
-    // Clamp final modulated values
-    totalDuration = rack::math::clamp(totalDuration, 0.05f, 2.0f);
     duty = rack::math::clamp(duty, 0.f, 1.f);
     bias = rack::math::clamp(bias, 0.f, 1.f);
 
@@ -167,7 +192,7 @@ void Thrum::process(const ProcessArgs& args) {
     bool audioInputConnected = inputs[AUDIO_INPUT].isConnected();
     float inVal = audioInputConnected ? inputs[AUDIO_INPUT].getVoltageSum() : 0.f;
 
-    // --- Sample Selection Logic (Using direct value from configSwitch) ---
+    // --- Sample Selection Logic ---
     int desiredSampleIndex = static_cast<int>(params[SAMPLE_SELECT_PARAM].getValue());
     if (!loadedSamples.empty()) {
         if (desiredSampleIndex < 0) desiredSampleIndex = 0;
@@ -178,7 +203,7 @@ void Thrum::process(const ProcessArgs& args) {
     // --- End Sample Selection ---
 
 
-    // --- Envelope Calculation Logic (uses final 'totalDuration', 'duty', 'bias') ---
+    // --- Envelope Calculation Logic ---
     float envelopeDuration = totalDuration * rack::math::clamp(duty, 0.01f, 0.99f);
     envelopeDuration = fmaxf(envelopeDuration, 1e-6f);
     float peakFraction = rack::math::clamp(bias, 0.f, 1.f);
@@ -245,23 +270,24 @@ ThrumWidget::ThrumWidget(Thrum* module) {
     setPanel(createPanel(asset::plugin(pluginInstance, "res/Thrum.svg")));
 
     // --- Add Controls Row by Row with User's Hardcoded Positions ---
+    // Tooltips are now handled by configInput/configOutput/configParam/configSwitch
 
-    // Duration Row (Y ~ 20-25) - Now fully implemented
+    // Duration Row (Y ~ 20-25)
     addParam(createParamCentered<Magpie125>(mm2px(Vec(9.f, 20.f)), module, Thrum::TOTAL_DURATION_PARAM));
-    addParam(createParamCentered<Song60>(mm2px(Vec(23.f, 22.25f)), module, Thrum::DURATION_ATTEN_PARAM)); // Attenuverter
-    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(34.f, 22.33f)), module, Thrum::DURATION_CV_INPUT)); // CV Input
+    addParam(createParamCentered<Song60>(mm2px(Vec(23.f, 22.25f)), module, Thrum::DURATION_ATTEN_PARAM));
+    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(34.f, 22.33f)), module, Thrum::DURATION_CV_INPUT));
 
-    // Duty Cycle Row (Y ~ 45-50) - Now fully implemented
+    // Duty Cycle Row (Y ~ 45-50)
     addParam(createParamCentered<Magpie125>(mm2px(Vec(9.f, 39.f)), module, Thrum::DUTY_CYCLE_PARAM));
-    addParam(createParamCentered<Song60>(mm2px(Vec(23.f, 41.25f)), module, Thrum::DUTY_ATTEN_PARAM)); // Attenuverter
-    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(34.f, 41.33f)), module, Thrum::DUTY_CV_INPUT)); // CV Input
+    addParam(createParamCentered<Song60>(mm2px(Vec(23.f, 41.25f)), module, Thrum::DUTY_ATTEN_PARAM));
+    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(34.f, 41.33f)), module, Thrum::DUTY_CV_INPUT));
 
-    // Bias Row (Y ~ 70-75) - WITH CV/Atten (Implemented)
+    // Bias Row (Y ~ 70-75)
     addParam(createParamCentered<Magpie125>(mm2px(Vec(9.f, 58.f)), module, Thrum::BIAS_PARAM));
-    addParam(createParamCentered<Song60>(mm2px(Vec(23.f, 60.25f)), module, Thrum::BIAS_ATTEN_PARAM)); // Attenuverter
-    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(34.f, 60.33f)), module, Thrum::BIAS_CV_INPUT)); // CV Input
+    addParam(createParamCentered<Song60>(mm2px(Vec(23.f, 60.25f)), module, Thrum::BIAS_ATTEN_PARAM));
+    addInput(createInputCentered<PJ301MPort>(mm2px(Vec(34.f, 60.33f)), module, Thrum::BIAS_CV_INPUT));
 
-    // Sample Select Knob (Y ~ 95) - Uses configSwitch now
+    // Sample Select Knob (Y ~ 95)
     addParam(createParamCentered<Song60>(mm2px(Vec(24.f, 92.5f)), module, Thrum::SAMPLE_SELECT_PARAM));
 
     // Bottom Row Jacks (User's Positions)
