@@ -33,6 +33,19 @@
         "Drone"
       ],
       "category": "Oscillator"
+    },
+    {
+      "slug": "Wend",
+      "name": "Wend",
+      "description": "A soft-shaping waveform generator that explores gentle curves rather than harsh edges. Wend manipulates sine-like waveforms through variable parameters and CV control, inviting expressive modulation and poetic oscillation. Designed for both LFO and audio-rate use, with an emphasis on smooth transformation over traditional waveform selection.",
+      "tags": [
+        "Oscillator",
+        "LFO",
+        "Modulation",
+        "Wave Shaper",
+        "Control Voltage"
+      ],
+      "category": "Oscillator"
     }
   ]
 }

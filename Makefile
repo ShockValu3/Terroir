@@ -6,7 +6,8 @@ BUILD_DIR := build
 
 SRC := plugin.cpp \
        src/Lure.cpp \
-       src/Thrum.cpp
+       src/Thrum.cpp \
+	   src/Wend.cpp
 
 OBJ := $(SRC:.cpp=.o)
 
